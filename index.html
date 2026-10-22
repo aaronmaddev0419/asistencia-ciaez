@@ -373,28 +373,32 @@
       }
     };
 
-    // Inicializar Firebase
-    async function initFirebase() {
-      try {
-        const app = initializeApp(firebaseConfig);
-        auth = getAuth(app);
-        db = getFirestore(app);
+// Inicializar Firebase
+async function initFirebase() {
+  try {
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
 
-        // Autenticación anónima para permitir lectura/escritura limpia
-        await signInAnonymously(auth);
-
-        isOnline = true;
-        updateStatusBadge('En línea', 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30', 'bg-emerald-500');
-
-        // Escuchar datos en tiempo real
-        listenToCollections();
-      } catch (error) {
-        console.warn("Firebase no configurado o falló conexión. Operando en Modo Local:", error);
-        isOnline = false;
-        updateStatusBadge('Modo Local', 'bg-amber-500/20 text-amber-600 border-amber-500/30', 'bg-amber-400');
-        loadLocalStorage();
-      }
+    // Intentar inicio anónimo sin bloquear en caso de error
+    try {
+      await signInAnonymously(auth);
+    } catch (authErr) {
+      console.warn("Aviso de Auth (continuando sin login):", authErr);
     }
+
+    isOnline = true;
+    updateStatusBadge('En línea', 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30', 'bg-emerald-500');
+
+    // Escuchar datos en tiempo real
+    listenToCollections();
+  } catch (error) {
+    console.warn("Firebase no configurado o falló conexión. Operando en Modo Local:", error);
+    isOnline = false;
+    updateStatusBadge('Modo Local', 'bg-amber-500/20 text-amber-600 border-amber-500/30', 'bg-amber-400');
+    loadLocalStorage();
+  }
+}
 
     function updateStatusBadge(text, bgClasses, dotBg) {
       const badge = document.getElementById('status-badge');
