@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control de Asistencia y Nómina - CSE CIAEZ</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Google Fonts -->
+  <link id="font-link" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              PRIMARY: '#0f172a',
+              50: '#f8fafc',
+              100: '#f1f5f9',
+              500: '#0f172a',
+              600: '#020617',
+              700: '#020617',
+            }
+          },
+          fontFamily: {
+            custom: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    .active-tab {
+      border-bottom: 2px solid #ef4444;
+      color: #ef4444;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 font-custom min-h-screen">
+
+  <!-- Header / Navbar -->
+  <header class="bg-slate-900 text-white shadow-md sticky top-0 z-50">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+      
+      <!-- Logo y Título -->
+      <div class="flex items-center space-x-3">
+        <div id="logo-container" class="w-10 h-10 rounded-lg bg-red-600 flex items-center justify-center text-white font-bold text-xl overflow-hidden shadow-sm">
+          <i data-lucide="clock" id="default-logo-icon"></i>
+          <img id="custom-logo-img" src="" alt="Logo" class="w-full h-full object-cover hidden">
+        </div>
+        <div>
+          <h1 class="font-bold text-lg leading-tight" id="app-title-text">Control de Asistencia</h1>
+          <p class="text-xs text-slate-400">Panel de Control & Nómina</p>
+        </div>
+      </div>
+
+      <!-- Estado de Red y Selector de Rol -->
+      <div class="flex items-center gap-3">
+        <span id="status-badge" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          <span class="w-2 h-2 mr-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+          Conectando...
+        </span>
+
+        <button id="role-btn" onclick="toggleRoleModal()" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 rounded-lg border border-slate-700 transition">
+          <i data-lucide="shield" class="w-3.5 h-3.5 text-slate-400" id="role-icon"></i>
+          <span id="role-text">Rol: Auxiliar</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Navegación por Pestañas -->
+    <nav class="bg-slate-950 px-4 border-t border-slate-800">
+      <div class="max-w-6xl mx-auto flex space-x-8 text-sm">
+        <button onclick="switchTab('asistencia')" id="tab-asistencia" class="py-3 px-1 active-tab flex items-center gap-2 hover:text-red-400 transition">
+          <i data-lucide="calendar" class="w-4 h-4"></i> Asistencia
+        </button>
+        <button onclick="switchTab('nomina')" id="tab-nomina" class="py-3 px-1 text-slate-400 flex items-center gap-2 hover:text-red-400 transition hidden">
+          <i data-lucide="dollar-sign" class="w-4 h-4"></i> Nómina
+        </button>
+        <button onclick="switchTab('personalizar')" id="tab-personalizar" class="py-3 px-1 text-slate-400 flex items-center gap-2 hover:text-red-400 transition hidden">
+          <i data-lucide="palette" class="w-4 h-4"></i> Personalizar
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Contenido Principal -->
+  <main class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- SECCIÓN 1: ASISTENCIA -->
+    <div id="view-asistencia" class="space-y-6">
+      
+      <!-- Formulario de Registro Manual -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <i data-lucide="user-plus" class="w-5 h-5 text-red-600"></i>
+            Nuevo Registro Manual
+          </h2>
+          <button type="button" onclick="setCurrentDateTime()" class="text-xs text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded transition">
+            Hora Actual
+          </button>
+        </div>
+
+        <form id="attendance-form" onsubmit="handleAttendanceSubmit(event)" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div class="md:col-span-2">
+              <label class="block text-xs font-medium text-slate-600 mb-1">Colaborador</label>
+              <select id="collab-select" onchange="onCollabSelectChange()" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+                <option value="">Selecciona o escribe abajo...</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">ID Colaborador</label>
+              <input type="text" id="collab-id" placeholder="Ej: EMP-101" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+            </div>
+
+            <div class="md:col-span-3">
+              <label class="block text-xs font-medium text-slate-600 mb-1">Nombre Completo</label>
+              <input type="text" id="collab-name" required placeholder="Nombre y Apellidos" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Fecha</label>
+              <input type="date" id="record-date" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Entrada</label>
+              <input type="time" id="time-in" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+            </div>
+
+            <div>
+              <label class="block text-xs font-medium text-slate-600 mb-1">Salida</label>
+              <input type="time" id="time-out" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:outline-none">
+            </div>
+
+          </div>
+
+          <button type="submit" id="save-attendance-btn" class="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg text-sm shadow-sm transition flex items-center justify-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i> Guardar Registro
+          </button>
+        </form>
+      </div>
+
+      <!-- Tabla de Historial -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-200 flex flex-wrap justify-between items-center gap-3 bg-slate-50">
+          <h3 class="font-semibold text-slate-800 text-sm flex items-center gap-2">
+            <i data-lucide="list" class="w-4 h-4 text-slate-500"></i> Historial de Registros
+          </h3>
+          
+          <div class="flex items-center gap-2">
+            <input type="text" id="search-input" oninput="renderAttendanceTable()" placeholder="Buscar..." class="bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-red-500 focus:outline-none">
+            <input type="date" id="filter-date" onchange="renderAttendanceTable()" class="bg-white border border-slate-300 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-red-500 focus:outline-none">
+            <button onclick="exportCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center gap-1">
+              <i data-lucide="download" class="w-3.5 h-3.5"></i> CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="p-3">Fecha</th>
+                <th class="p-3">ID / Colaborador</th>
+                <th class="p-3 text-center">Entrada</th>
+                <th class="p-3 text-center">Salida</th>
+                <th class="p-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="attendance-table-body" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="5" class="p-6 text-center text-slate-400">Sin registros de asistencia encontrados</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN 2: NÓMINA (SOLO ADMIN) -->
+    <div id="view-nomina" class="space-y-6 hidden">
+      
+      <!-- Agregar/Editar Empleado Nómina -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+        <h2 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <i data-lucide="user-cog" class="w-5 h-5 text-red-600"></i>
+          Gestión de Colaboradores y Salarios
+        </h2>
+
+        <form id="payroll-form" onsubmit="handlePayrollSubmit(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">ID Colaborador</label>
+            <input type="text" id="pay-id" required placeholder="Ej: EMP-01" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Nombre Completo</label>
+            <input type="text" id="pay-name" required placeholder="Nombre completo" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Periodicidad</label>
+            <select id="pay-period" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+              <option value="Semanal">Semanal</option>
+              <option value="Quincenal">Quincenal</option>
+              <option value="Mensual">Mensual</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Monto ($ MXN)</label>
+            <input type="number" step="0.01" id="pay-amount" required placeholder="0.00" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+          </div>
+
+          <div class="md:col-span-4 flex justify-end gap-2">
+            <button type="submit" class="bg-slate-900 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-xs transition flex items-center gap-1">
+              <i data-lucide="plus-circle" class="w-4 h-4"></i> Guardar Colaborador
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Tabla de Nómina -->
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-4 border-b border-slate-200 bg-slate-50">
+          <h3 class="font-semibold text-slate-800 text-sm">Listado de Salarios Configurados</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="p-3">ID</th>
+                <th class="p-3">Nombre</th>
+                <th class="p-3">Periodicidad</th>
+                <th class="p-3 text-right">Monto</th>
+                <th class="p-3 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="payroll-table-body" class="divide-y divide-slate-100">
+              <tr>
+                <td colspan="5" class="p-6 text-center text-slate-400">Sin colaboradores registrados en catálogo</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SECCIÓN 3: PERSONALIZAR (SOLO ADMIN) -->
+    <div id="view-personalizar" class="space-y-6 hidden">
+      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 max-w-2xl mx-auto space-y-6">
+        
+        <div>
+          <h2 class="text-base font-semibold text-slate-800 flex items-center gap-2">
+            <i data-lucide="palette" class="w-5 h-5 text-red-600"></i>
+            Personalización Visual
+          </h2>
+          <p class="text-xs text-slate-500">Ajusta los colores, el título y el logo institucional.</p>
+        </div>
+
+        <form id="customization-form" onsubmit="handleCustomizationSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Nombre de la Aplicación / Empresa</label>
+            <input type="text" id="cust-title" placeholder="Control de Asistencia" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">Color Distintivo Primary (Hexadecimal)</label>
+            <div class="flex gap-2">
+              <input type="color" id="cust-color-picker" onchange="document.getElementById('cust-color').value = this.value" class="h-9 w-12 rounded cursor-pointer border border-slate-300">
+              <input type="text" id="cust-color" placeholder="#ef4444" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">URL del Logo (Opcional)</label>
+            <input type="url" id="cust-logo-url" placeholder="https://ejemplo.com/logo.png" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex justify-end">
+            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg text-xs transition">
+              Guardar Cambios Visuales
+            </button>
+          </div>
+        </form>
+
+        <div class="pt-6 border-t border-slate-200">
+          <h3 class="text-xs font-semibold text-slate-800 mb-2">Seguridad y Acceso</h3>
+          <div class="flex items-center gap-2">
+            <input type="password" id="new-pin-input" placeholder="Nuevo PIN Admin" class="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-red-500">
+            <button onclick="updateAdminPin()" class="bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs transition">
+              Guardar PIN
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL DE PIN PARA CAMBIO DE ROL -->
+  <div id="pin-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-xl shadow-xl max-w-xs w-full p-6 text-center space-y-4">
+      <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
+        <i data-lucide="lock" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-bold text-slate-800">Acceso Administrador</h3>
+        <p class="text-xs text-slate-500">Ingresa el PIN de seguridad para acceder.</p>
+      </div>
+      <input type="password" id="pin-input" placeholder="PIN" class="w-full text-center tracking-widest text-lg font-bold border border-slate-300 rounded-lg py-2 focus:ring-2 focus:ring-red-500 focus:outline-none">
+      <div class="flex gap-2">
+        <button onclick="closePinModal()" class="w-1/2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium py-2 rounded-lg transition">Cancelar</button>
+        <button onclick="verifyAdminPin()" class="w-1/2 bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-2 rounded-lg transition">Entrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Firebase Scripts Modulares -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot, addDoc, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    // Credenciales de Firebase de la app del usuario (asistencia-ciaez)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCrRCuypGqJzeIhisIccaymVmZYcnzA4tc",
+      authDomain: "asistencia-ciaez.firebaseapp.com",
+      projectId: "asistencia-ciaez",
+      storageBucket: "asistencia-ciaez.firebasestorage.app",
+      messagingSenderId: "859724916766",
+      appId: "1:859724916766:web:e7fd2e46ef95cecc3e260f",
+      measurementId: "G-CFDRS4DJ80"
+    };
+
+    let db = null;
+    let auth = null;
+    let isOnline = false;
+
+    // Estado local de la app
+    window.appState = {
+      role: 'Auxiliar', // 'Auxiliar' o 'Admin'
+      pin: '1234',
+      attendance: [],
+      collaborators: [
+        { id: 'AMM-01', name: 'AARON MADRIGAL MARIN', period: 'Quincenal', amount: 0 },
+        { id: 'TKDAR-03', name: 'TANIA KRISTELL DEL ANGEL ROMERO', period: 'Quincenal', amount: 0 },
+        { id: 'OMCC-02', name: 'OSCAR MANUEL CORZO CORTAZAR', period: 'Quincenal', amount: 0 },
+        { id: 'JNCC-04', name: 'JADE NAHOMY CONTRERAS CULEBRO', period: 'Quincenal', amount: 0 },
+        { id: 'VMUL-05', name: 'VICTOR MANUEL UTRERA LOPEZ', period: 'Quincenal', amount: 0 }
+      ],
+      config: {
+        title: 'Control de Asistencia',
+        primaryColor: '#ef4444',
+        logoUrl: ''
+      }
+    };
+
+    // Inicializar Firebase
+    async function initFirebase() {
+      try {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // Autenticación anónima para permitir lectura/escritura limpia
+        await signInAnonymously(auth);
+
+        isOnline = true;
+        updateStatusBadge('En línea', 'bg-emerald-500/20 text-emerald-600 border-emerald-500/30', 'bg-emerald-500');
+
+        // Escuchar datos en tiempo real
+        listenToCollections();
+      } catch (error) {
+        console.warn("Firebase no configurado o falló conexión. Operando en Modo Local:", error);
+        isOnline = false;
+        updateStatusBadge('Modo Local', 'bg-amber-500/20 text-amber-600 border-amber-500/30', 'bg-amber-400');
+        loadLocalStorage();
+      }
+    }
+
+    function updateStatusBadge(text, bgClasses, dotBg) {
+      const badge = document.getElementById('status-badge');
+      badge.className = `inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${bgClasses}`;
+      badge.innerHTML = `<span class="w-2 h-2 mr-1.5 rounded-full ${dotBg}"></span> ${text}`;
+    }
+
+    function listenToCollections() {
+      if (!db) return;
+
+      // Escuchar Registros de Asistencia
+      onSnapshot(collection(db, 'attendance'), (snapshot) => {
+        window.appState.attendance = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        window.renderAttendanceTable();
+      });
+
+      // Escuchar Nómina
+      onSnapshot(collection(db, 'payroll'), (snapshot) => {
+        if (!snapshot.empty) {
+          window.appState.collaborators = snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
+          window.populateCollabDropdown();
+          window.renderPayrollTable();
+        }
+      });
+
+      // Escuchar Personalización
+      onSnapshot(collection(db, 'config'), (snapshot) => {
+        snapshot.docs.forEach(doc => {
+          if (doc.id === 'general') {
+            const data = doc.data();
+            window.appState.config = { ...window.appState.config, ...data };
+            if (data.pin) window.appState.pin = data.pin;
+            window.applyCustomizations();
+          }
+        });
+      });
+    }
+
+    // Persistir datos localmente si no hay conexión a Firebase
+    function loadLocalStorage() {
+      const localData = localStorage.getItem('ciaez_app_data');
+      if (localData) {
+        const parsed = JSON.parse(localData);
+        window.appState = { ...window.appState, ...parsed };
+      }
+      window.populateCollabDropdown();
+      window.renderAttendanceTable();
+      window.renderPayrollTable();
+      window.applyCustomizations();
+    }
+
+    window.saveLocalState = function() {
+      if (!isOnline) {
+        localStorage.setItem('ciaez_app_data', JSON.stringify(window.appState));
+      }
+    };
+
+    // Funciones Globales accesibles desde la UI
+    window.handleAttendanceSubmit = async function(e) {
+      e.preventDefault();
+      const date = document.getElementById('record-date').value;
+      const collabId = document.getElementById('collab-id').value;
+      const collabName = document.getElementById('collab-name').value;
+      const timeIn = document.getElementById('time-in').value;
+      const timeOut = document.getElementById('time-out').value;
+
+      const record = {
+        date,
+        collabId,
+        collabName,
+        timeIn,
+        timeOut,
+        createdAt: new Date().toISOString()
+      };
+
+      if (isOnline && db) {
+        await addDoc(collection(db, 'attendance'), record);
+      } else {
+        record.id = 'loc_' + Date.now();
+        window.appState.attendance.unshift(record);
+        window.saveLocalState();
+        window.renderAttendanceTable();
+      }
+
+      document.getElementById('attendance-form').reset();
+      window.setCurrentDateTime();
+    };
+
+    window.handlePayrollSubmit = async function(e) {
+      e.preventDefault();
+      const id = document.getElementById('pay-id').value;
+      const name = document.getElementById('pay-name').value;
+      const period = document.getElementById('pay-period').value;
+      const amount = parseFloat(document.getElementById('pay-amount').value) || 0;
+
+      const item = { id, name, period, amount };
+
+      if (isOnline && db) {
+        await setDoc(doc(db, 'payroll', id), item);
+      } else {
+        const idx = window.appState.collaborators.findIndex(c => c.id === id);
+        if (idx >= 0) window.appState.collaborators[idx] = item;
+        else window.appState.collaborators.push(item);
+        window.saveLocalState();
+        window.populateCollabDropdown();
+        window.renderPayrollTable();
+      }
+
+      document.getElementById('payroll-form').reset();
+    };
+
+    window.handleCustomizationSubmit = async function(e) {
+      e.preventDefault();
+      const title = document.getElementById('cust-title').value;
+      const color = document.getElementById('cust-color').value;
+      const logoUrl = document.getElementById('cust-logo-url').value;
+
+      const configData = { title, primaryColor: color, logoUrl };
+
+      if (isOnline && db) {
+        await setDoc(doc(db, 'config', 'general'), configData, { merge: true });
+      } else {
+        window.appState.config = { ...window.appState.config, ...configData };
+        window.saveLocalState();
+        window.applyCustomizations();
+      }
+    };
+
+    window.updateAdminPin = async function() {
+      const newPin = document.getElementById('new-pin-input').value;
+      if (!newPin) return;
+
+      if (isOnline && db) {
+        await setDoc(doc(db, 'config', 'general'), { pin: newPin }, { merge: true });
+      } else {
+        window.appState.pin = newPin;
+        window.saveLocalState();
+      }
+      document.getElementById('new-pin-input').value = '';
+      alert('PIN actualizado con éxito');
+    };
+
+    window.deleteRecord = async function(id) {
+      if (!confirm('¿Eliminar este registro?')) return;
+      if (isOnline && db) {
+        await deleteDoc(doc(db, 'attendance', id));
+      } else {
+        window.appState.attendance = window.appState.attendance.filter(a => a.id !== id);
+        window.saveLocalState();
+        window.renderAttendanceTable();
+      }
+    };
+
+    // Inicializar al cargar ventana
+    window.addEventListener('DOMContentLoaded', () => {
+      initFirebase();
+      lucide.createIcons();
+      window.setCurrentDateTime();
+      window.populateCollabDropdown();
+    });
+  </script>
+
+  <!-- Lógica de UI Interactiva -->
+  <script>
+    function setCurrentDateTime() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+
+      document.getElementById('record-date').value = `${year}-${month}-${day}`;
+      document.getElementById('time-in').value = `${hours}:${minutes}`;
+    }
+
+    function switchTab(tabName) {
+      // Ocultar todas las secciones
+      document.getElementById('view-asistencia').classList.add('hidden');
+      document.getElementById('view-nomina').classList.add('hidden');
+      document.getElementById('view-personalizar').classList.add('hidden');
+
+      // Remover clases de pestaña activa
+      document.getElementById('tab-asistencia').classList.remove('active-tab');
+      document.getElementById('tab-nomina').classList.remove('active-tab');
+      document.getElementById('tab-personalizar').classList.remove('active-tab');
+
+      // Mostrar pestaña seleccionada
+      document.getElementById(`view-${tabName}`).classList.remove('hidden');
+      document.getElementById(`tab-${tabName}`).classList.add('active-tab');
+    }
+
+    function toggleRoleModal() {
+      if (window.appState.role === 'Admin') {
+        window.appState.role = 'Auxiliar';
+        updateRoleUI();
+      } else {
+        document.getElementById('pin-modal').classList.remove('hidden');
+        document.getElementById('pin-input').value = '';
+        document.getElementById('pin-input').focus();
+      }
+    }
+
+    function closePinModal() {
+      document.getElementById('pin-modal').classList.add('hidden');
+    }
+
+    function verifyAdminPin() {
+      const enteredPin = document.getElementById('pin-input').value;
+      if (enteredPin === window.appState.pin) {
+        window.appState.role = 'Admin';
+        closePinModal();
+        updateRoleUI();
+      } else {
+        alert('PIN incorrecto');
+      }
+    }
+
+    function updateRoleUI() {
+      const roleText = document.getElementById('role-text');
+      const tabNomina = document.getElementById('tab-nomina');
+      const tabPersonalizar = document.getElementById('tab-personalizar');
+
+      if (window.appState.role === 'Admin') {
+        roleText.innerText = 'Rol: Admin';
+        tabNomina.classList.remove('hidden');
+        tabPersonalizar.classList.remove('hidden');
+      } else {
+        roleText.innerText = 'Rol: Auxiliar';
+        tabNomina.classList.add('hidden');
+        tabPersonalizar.classList.add('hidden');
+        switchTab('asistencia');
+      }
+      renderAttendanceTable();
+    }
+
+    function populateCollabDropdown() {
+      const select = document.getElementById('collab-select');
+      select.innerHTML = '<option value="">Selecciona o escribe abajo...</option>';
+      window.appState.collaborators.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c.id;
+        opt.innerText = `${c.name} (${c.id})`;
+        select.appendChild(opt);
+      });
+    }
+
+    function onCollabSelectChange() {
+      const select = document.getElementById('collab-select');
+      const collab = window.appState.collaborators.find(c => c.id === select.value);
+      if (collab) {
+        document.getElementById('collab-id').value = collab.id;
+        document.getElementById('collab-name').value = collab.name;
+      }
+    }
+
+    function renderAttendanceTable() {
+      const tbody = document.getElementById('attendance-table-body');
+      const search = document.getElementById('search-input').value.toLowerCase();
+      const dateFilter = document.getElementById('filter-date').value;
+
+      let filtered = window.appState.attendance.filter(r => {
+        const matchesSearch = (r.collabName || '').toLowerCase().includes(search) || (r.collabId || '').toLowerCase().includes(search);
+        const matchesDate = !dateFilter || r.date === dateFilter;
+        return matchesSearch && matchesDate;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Sin registros de asistencia encontrados</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => `
+        <tr class="hover:bg-slate-50 border-b border-slate-100">
+          <td class="p-3 font-medium text-slate-700">${r.date || '-'}</td>
+          <td class="p-3">
+            <div class="font-semibold text-slate-800">${r.collabName || 'Sin Nombre'}</div>
+            <div class="text-[10px] text-slate-400">${r.collabId || '-'}</div>
+          </td>
+          <td class="p-3 text-center">
+            <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-[11px]">${r.timeIn || '--:--'}</span>
+          </td>
+          <td class="p-3 text-center">
+            <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-mono text-[11px]">${r.timeOut || '--:--'}</span>
+          </td>
+          <td class="p-3 text-right">
+            ${window.appState.role === 'Admin' ? `
+              <button onclick="deleteRecord('${r.id}')" class="text-red-500 hover:text-red-700 p-1">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            ` : ''}
+          </td>
+        </tr>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function renderPayrollTable() {
+      const tbody = document.getElementById('payroll-table-body');
+      if (window.appState.collaborators.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Sin colaboradores registrados</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = window.appState.collaborators.map(c => `
+        <tr class="hover:bg-slate-50 border-b border-slate-100">
+          <td class="p-3 font-mono text-xs text-slate-500">${c.id}</td>
+          <td class="p-3 font-medium text-slate-800">${c.name}</td>
+          <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold">${c.period}</span></td>
+          <td class="p-3 text-right font-bold text-slate-800">$${(c.amount || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</td>
+          <td class="p-3 text-right">
+            <button onclick="fillPayrollForm('${c.id}')" class="text-slate-500 hover:text-slate-800 text-xs">Editar</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function fillPayrollForm(id) {
+      const c = window.appState.collaborators.find(col => col.id === id);
+      if (c) {
+        document.getElementById('pay-id').value = c.id;
+        document.getElementById('pay-name').value = c.name;
+        document.getElementById('pay-period').value = c.period;
+        document.getElementById('pay-amount').value = c.amount;
+      }
+    }
+
+    function applyCustomizations() {
+      const config = window.appState.config;
+      if (config.title) {
+        document.getElementById('app-title-text').innerText = config.title;
+        document.getElementById('cust-title').value = config.title;
+      }
+      if (config.logoUrl) {
+        document.getElementById('default-logo-icon').classList.add('hidden');
+        const img = document.getElementById('custom-logo-img');
+        img.src = config.logoUrl;
+        img.classList.remove('hidden');
+        document.getElementById('cust-logo-url').value = config.logoUrl;
+      }
+      if (config.primaryColor) {
+        document.getElementById('cust-color').value = config.primaryColor;
+        document.getElementById('cust-color-picker').value = config.primaryColor;
+      }
+    }
+
+    function exportCSV() {
+      if (window.appState.attendance.length === 0) {
+        alert('No hay registros para exportar');
+        return;
+      }
+      let csv = 'Fecha,ID,Nombre,Entrada,Salida\n';
+      window.appState.attendance.forEach(r => {
+        csv += `"${r.date}","${r.collabId}","${r.collabName}","${r.timeIn}","${r.timeOut}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `asistencia_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+  </script>
+</body>
+</html>
